@@ -70,25 +70,4 @@ so the user can review their cart without navigating away.
 
 No other third-party libraries are used. `json` and `os` are from the Python standard library.
 
----
 
-## Challenges
-
-**Floating point arithmetic** : multiplying prices and quantities produced results like `$29.999999999` due to how floating point works in Python. 
-Fixed by rounding all price calculations with `round(..., 2)`.
-
-**Empty JSON file crash** : `json.load()` raises an error on an empty file. 
-This happened whenever `orders.json` or `messages.json` existed on disk but had no content yet. 
-Fixed by reading the file as a string first and checking if it is empty before parsing.
-
----
-
-## Bonuses
-
-- **Sticky navbar** : the header stays visible while scrolling using `position: sticky` in CSS
-- **Announcement bar** : a thin bar above the navbar shows the free shipping threshold, giving users a reason to add more to their cart
-- **Order summary on checkout** : the cart is shown inline on the checkout page so users don't have to navigate back to review it
-- **Type filter and genre sub-filter** : products cand be filtred by type(Console or Game).
-                                        Games can also be filtered by genre (RPG, Platformer, Fighting),
-                                        with the genre buttons only appearing when the Games filter is active
-- **Contact form** : messages submitted via the contact page are saved to `messages.json`, mirroring how orders are stored

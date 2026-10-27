@@ -1,0 +1,35 @@
+{% extends "_base.html" %}
+
+{% block title %}Shopping Cart{% endblock %}
+
+{% block content %}
+<h1 class="main-title">Products</h1>
+
+<div class="mb-3">
+    <a href="/" class="btn btn-sm {% if not active_type %}btn-dark{% else %}btn-outline-dark{% endif %}">All</a>
+    <a href="/?type=Console" class="btn btn-sm {% if active_type == 'Console' %}btn-dark{% else %}btn-outline-dark{% endif %}">Consoles</a>
+    <a href="/?type=Game" class="btn btn-sm {% if active_type == 'Game' %}btn-dark{% else %}btn-outline-dark{% endif %}">Games</a>
+
+    {% if active_type == 'Game' %}
+    <span class="ms-3 text-muted">Genre:</span>
+    <a href="/?type=Game" class="btn btn-sm {% if not active_genre %}btn-secondary{% else %}btn-outline-secondary{% endif %}">All</a>
+    <a href="/?type=Game&genre=RPG" class="btn btn-sm {% if active_genre == 'RPG' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">RPG</a>
+    <a href="/?type=Game&genre=Platformer" class="btn btn-sm {% if active_genre == 'Platformer' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Platformer</a>
+    <a href="/?type=Game&genre=Fighting" class="btn btn-sm {% if active_genre == 'Fighting' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Fighting</a>
+    {% endif %}
+</div>
+
+<div class="d-flex flex-wrap">
+  {% for product in products %}
+  <div class="card m-2" style="width: 18rem;">
+    <img src="{{ product.image}}" class="card-img-top" alt="{{ product.name }}" style="height: 230px; object-fit: cover;">
+    <div class = "card-body">
+      <h5 class="card-title">{{ product.name }}</h5>
+      <p class="card-text">{{ product.description }}</p>
+      <p class="card-text"><strong>${{ product.price }}</strong></p>
+      <a href="/cart/add-item?id={{ product.id }}" class="btn btn-primary">Add to Cart</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

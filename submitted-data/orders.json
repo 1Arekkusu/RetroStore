@@ -1,0 +1,55 @@
+[
+  {
+    "full_name": "test",
+    "email": "test@test",
+    "phone": "test",
+    "address": "test",
+    "payment_method": "cash",
+    "cart": [
+      {
+        "product_id": "1",
+        "name": "Game Boy Advance",
+        "price": 99.99,
+        "quantity": 1,
+        "subtotal": 99.99
+      },
+      {
+        "product_id": "2",
+        "name": "Nintendo 3DS",
+        "price": 249.99,
+        "quantity": 1,
+        "subtotal": 249.99
+      }
+    ]
+  },
+  {
+    "full_name": "test",
+    "email": "test@test",
+    "phone": "07",
+    "address": "test address",
+    "payment_method": "card",
+    "cart": [
+      {
+        "product_id": "1",
+        "name": "Game Boy Advance",
+        "price": 99.99,
+        "quantity": 1,
+        "subtotal": 99.99
+      },
+      {
+        "product_id": "2",
+        "name": "Nintendo 3DS",
+        "price": 249.99,
+        "quantity": 1,
+        "subtotal": 249.99
+      },
+      {
+        "product_id": "4",
+        "name": "Pokemon Fire Red",
+        "price": 49.99,
+        "quantity": 1,
+        "subtotal": 49.99
+      }
+    ]
+  }
+]

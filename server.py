@@ -1,15 +1,32 @@
-from flask import Flask, request, render_template, redirect, session
+from flask import Flask, request, render_template, redirect, session, g
 from products import products
+import secrets
 import os
-import json
+import sqlite3
 
 app = Flask(__name__, static_folder="public")
-app.secret_key = "REMOVED"
 
+DATABASE = "database.db"
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
-ORDERS_FILE = "./submitted-data/orders.json"
-MESSAGES_FILE = "./submitted-data/messages.json"
+def get_db():
+    if "db" not in g:
+        g.db = sqlite3.connect(DATABASE)
+        g.db.row_factory = sqlite3.Row
+        g.db.execute("PRAGMA foreign_keys = ON")
+    return g.db
 
+@app.teardown_appcontext
+def close_db(exception):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
+@app.cli.command("init-db")
+def init_db_command():
+    with open("schema.sql") as f:
+        get_db().executescript(f.read())
+    print("Database initialized.")
 
 @app.route("/")
 def index():
@@ -85,17 +102,6 @@ def cart():
     total = round(total, 2)
     return render_template("cart.html", cart_products=cart_products, total=total, shipping = shipping)
 
-def load_file(file):
-    with open(file, 'r') as f:
-        content = f.read().strip()
-        if not content:
-            return []
-        return json.loads(content)
-
-def save_file(file, text):
-    with open(file, 'w') as  f:
-        json.dump(text, f, indent=2)
-
 @app.route("/checkout", methods=['GET', 'POST'])
 def checkout():
     cart = session.get('cart', {})
@@ -118,18 +124,24 @@ def checkout():
     total += shipping
     total = round(total, 2)
     if request.method == 'POST':
-        order = {
-            "full_name": request.form["full_name"],
-            "email": request.form["email"],
-            "phone": request.form["phone"],
-            "address": request.form["address"],
-            "payment_method": request.form["payment_method"],
-            "cart": cart_products
-        }
-        print(json.dumps(order, indent=2))
-        orders = load_file(ORDERS_FILE)
-        orders.append(order)
-        save_file(ORDERS_FILE, orders)
+        db = get_db()
+        cur = db.execute(
+            """INSERT INTO orders
+               (full_name, email, phone, address, payment_method, shipping, total)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (request.form["full_name"], request.form["email"], request.form["phone"],
+             request.form["address"], request.form["payment_method"], shipping, total)
+        )
+        order_id = cur.lastrowid
+
+        db.executemany(
+            """INSERT INTO order_items(order_id, product_id, name, price, quantity)
+               VALUES (?, ?, ?, ?, ?)""",
+            [(order_id, int(i["product_id"]), i["name"], i["price"], i["quantity"])
+            for i in cart_products]
+        )
+        db.commit()
+
         session['cart'] = {}
         return redirect('/order-confirmed')
     return render_template("checkout.html", cart_products=cart_products, total=total, shipping = shipping)

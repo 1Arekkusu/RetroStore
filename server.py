@@ -34,11 +34,16 @@ def index():
     type_filter = request.args.get("type")
     genre_filter = request.args.get("genre")
 
-    filtered = products
+    db = get_db()
+    query = "SELECT * FROM products WHERE 1=1"
+    params = []
     if type_filter:
-        filtered = [p for p in filtered if p.get('type') == type_filter]
+        query += " AND type = ?"
+        params.append(type_filter)
     if genre_filter:
-        filtered = [p for p in filtered if p.get('genre') == genre_filter]
+        query += " AND genre = ?"
+        params.append(genre_filter)
+    filtered = db.execute(query, params).fetchall()
 
     return render_template('index.html', products=filtered, active_type=type_filter, active_genre=genre_filter)
 
@@ -150,15 +155,12 @@ def checkout():
 @app.route("/contact", methods=['GET', 'POST'])
 def contact():
     if request.method == 'POST':
-        message = {
-            "name": request.form["name"],
-            "email": request.form["email"],
-            "message": request.form["message"]
-        }
-
-        messages = load_file(MESSAGES_FILE)
-        messages.append(message)
-        save_file(MESSAGES_FILE, messages)
+        db = get_db()
+        db.execute(
+            "INSERT INTO messages (name, email, message) VALUES (?, ?, ?)",
+            (request.form["name"], request.form["email"], request.form["message"])
+        )
+        db.commit()
 
     return render_template("contact.html")
 

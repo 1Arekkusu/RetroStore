@@ -16,6 +16,28 @@ def get_db():
         g.db.execute("PRAGMA foreign_keys = ON")
     return g.db
 
+def build_cart(cart):
+    if not cart:
+        return [], 0, 0
+
+    ids = [int(i) for i in cart]
+    placeholders = ",".join("?" * len(ids))
+    rows = get_db().execute(
+        f"SELECT * FROM products WHERE id IN ({placeholders})", ids
+    ).fetchall()
+
+    items = []
+    total = 0
+    for row in rows:
+        quantity = cart[str(row["id"])]      # session keys are strings
+        subtotal = round(row["price"] * quantity, 2)
+        total += subtotal
+        items.append({"product": row, "quantity": quantity, "subtotal": subtotal})
+
+    shipping = 0 if total >= 150 else 15
+    total = round(total + shipping, 2)
+    return items, shipping, total
+
 @app.teardown_appcontext
 def close_db(exception):
     db = g.pop("db", None)
@@ -52,7 +74,7 @@ def add_to_cart():
     product_id = request.args.get('id')
     if 'cart' not in session:
         session['cart'] = {}
-    cart = session['cart']
+    cart = session['cart']  
     if product_id in cart:
         cart[product_id] += 1
     else:
@@ -88,47 +110,18 @@ def update_cart():
 
 @app.route("/cart")
 def cart():
-    cart = session.get('cart', {})
-    cart_products = []
-    total = 0
-    for product in products:
-        product_id = str(product['id'])
-        if product_id in cart:
-            quantity = cart[product_id]
-            subtotal = round(product['price'] * quantity, 2)
-            total += subtotal
-            cart_products.append({
-                'product': product,
-                'quantity': quantity,
-                'subtotal': subtotal
-            })
-    shipping = 0 if total >= 150 else 15
-    total += shipping
-    total = round(total, 2)
-    return render_template("cart.html", cart_products=cart_products, total=total, shipping = shipping)
+    items, shipping, total = build_cart(session.get("cart", {}))
+    return render_template("cart.html", cart_products=items, total=total, shipping=shipping)
 
 @app.route("/checkout", methods=['GET', 'POST'])
 def checkout():
-    cart = session.get('cart', {})
-    cart_products = []
-    total = 0
-    for product in products:
-        product_id = str(product['id'])
-        if product_id in cart:
-            quantity = cart[product_id]
-            subtotal = round(product['price'] * quantity, 2)
-            total += subtotal
-            cart_products.append({
-                'product_id': product_id,
-                'name': product['name'],
-                'price': product['price'],
-                'quantity': quantity,
-                'subtotal': product['price'] * quantity
-            })
-    shipping = 0 if total >= 150 else 15
-    total += shipping
-    total = round(total, 2)
-    if request.method == 'POST':
+    items, shipping, total = build_cart(session.get("cart", {}))
+
+    if request.method == "POST":
+
+        if not items:
+            return redirect("/cart")
+
         db = get_db()
         cur = db.execute(
             """INSERT INTO orders
@@ -140,16 +133,17 @@ def checkout():
         order_id = cur.lastrowid
 
         db.executemany(
-            """INSERT INTO order_items(order_id, product_id, name, price, quantity)
+            """INSERT INTO order_items (order_id, product_id, name, price, quantity)
                VALUES (?, ?, ?, ?, ?)""",
-            [(order_id, int(i["product_id"]), i["name"], i["price"], i["quantity"])
-            for i in cart_products]
+            [(order_id, i["product"]["id"], i["product"]["name"],
+              i["product"]["price"], i["quantity"]) for i in items]
         )
         db.commit()
 
-        session['cart'] = {}
-        return redirect('/order-confirmed')
-    return render_template("checkout.html", cart_products=cart_products, total=total, shipping = shipping)
+        session["cart"] = {}
+        return redirect("/order-confirmed")
+
+    return render_template("checkout.html", cart_products=items, total=total, shipping=shipping)
 
 
 @app.route("/contact", methods=['GET', 'POST'])

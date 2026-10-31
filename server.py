@@ -52,12 +52,21 @@ def init_db_command():
         get_db().executescript(f.read())
     print("Database initialized.")
 
+@app.before_request
+def load_user():
+    g.user = None
+    user_id = session.get("user_id")
+    if user_id is not None:
+        g.user = get_db().execute(
+            "SELECT id, username, email FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+
 @app.route("/register", methods = ["GET", "POST"])
 def register():
     errors = {};
     if request.method == "POST":
         username = request.form["username"].strip()
-        email = request.form["email"].strip()
+        email = request.form["email"].strip().lower()
         password = request.form["password"]
         db = get_db()
 
@@ -90,6 +99,28 @@ def register():
 
 
     return render_template("register.html", errors = errors) 
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        email = request.form["email"].strip().lower()
+        password = request.form["password"]
+        user = get_db().execute(
+            "SELECT * FROM users WHERE email = ?", (email,)
+        ).fetchone()
+
+        if user is None or not check_password_hash(user["password_hash"], password):
+            error = "Invalid email or password"
+        else:
+            session["user_id"] = user["id"]
+            return redirect("/")
+    return render_template("login.html", error = error)
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.pop("user_id", None)
+    return redirect("/")
 
 @app.route("/")
 def index():

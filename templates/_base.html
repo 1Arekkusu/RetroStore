@@ -29,6 +29,18 @@
             <a class="nav-item nav-link {% if request.path == '/contact' %}active{% endif %}" href="/contact">Contact</a>
           </div>
         </div>
+        <div class="navbar-nav ml-auto align-items-center">
+            {% if g.user %}
+              <span class="navbar-text mr-3">Hi, {{ g.user.username }}</span>
+              <a class="nav-item nav-link {% if request.path == '/orders' %}active{% endif %}" href="/orders">My orders</a>
+              <form method="post" action="/logout" class="form-inline">
+                <button class="btn btn-outline-light btn-sm ml-2">Log out</button>
+              </form>
+            {% else %}
+              <a class="nav-item nav-link {% if request.path == '/login' %}active{% endif %}" href="/login">Log in</a>
+              <a class="nav-item nav-link {% if request.path == '/register' %}active{% endif %}" href="/register">Register</a>
+            {% endif %}
+          </div>
       </div>
     </nav>
   </header>

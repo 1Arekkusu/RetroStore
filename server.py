@@ -3,6 +3,8 @@ from products import products
 import secrets
 import os
 import sqlite3
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__, static_folder="public")
 
@@ -29,7 +31,7 @@ def build_cart(cart):
     items = []
     total = 0
     for row in rows:
-        quantity = cart[str(row["id"])]      # session keys are strings
+        quantity = cart[str(row["id"])]     
         subtotal = round(row["price"] * quantity, 2)
         total += subtotal
         items.append({"product": row, "quantity": quantity, "subtotal": subtotal})
@@ -49,6 +51,45 @@ def init_db_command():
     with open("schema.sql") as f:
         get_db().executescript(f.read())
     print("Database initialized.")
+
+@app.route("/register", methods = ["GET", "POST"])
+def register():
+    errors = {};
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        email = request.form["email"].strip()
+        password = request.form["password"]
+        db = get_db()
+
+        if not username:
+            erorrs["username"] = "Please eneter a username."
+        elif db.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone():
+            erorrs["username"] = "That username is already taken."
+
+        if "@" not in email:
+            erorrs["email"] = "Please enter a valid email"
+        elif db.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
+            errors["email"] = "An account with that email already exists."
+
+        if len(password) < 8:
+            errors["password"] = "Password must be at least 8 characters."
+
+        if not errors:
+            try:
+                db.execute(
+                    "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+                    (username,  email, generate_password_hash(password))
+                )       
+                db.commit()
+                return redirect("/login")
+            except sqlite3.IntegrityError as e:
+                if "users.username" in str(e):
+                    errors["username"] = "That username is already taken."
+                else:
+                    errors["email"] = "An account with that email already exists."
+
+
+    return render_template("register.html", errors = errors) 
 
 @app.route("/")
 def index():

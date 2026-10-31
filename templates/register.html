@@ -1,0 +1,50 @@
+{% extends "_base.html" %}
+
+{% block title %}Register - Retro Store{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+  <div class="col-md-6 col-lg-5">
+    <h1 class="h3 mb-4">Create an account</h1>
+
+    <form method="post" novalidate>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username"
+               class="form-control {% if errors.username %}is-invalid{% endif %}"
+               value="{{ request.form.username }}" required autofocus>
+        {% if errors.username %}
+          <div class="invalid-feedback">{{ errors.username }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email"
+               class="form-control {% if errors.email %}is-invalid{% endif %}"
+               value="{{ request.form.email }}" required>
+        {% if errors.email %}
+          <div class="invalid-feedback">{{ errors.email }}</div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password"
+               class="form-control {% if errors.password %}is-invalid{% endif %}"
+               minlength="8" required>
+        <small class="form-text text-muted">At least 8 characters.</small>
+        {% if errors.password %}
+          <div class="invalid-feedback">{{ errors.password }}</div>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Register</button>
+    </form>
+
+    <p class="text-center mt-3">
+      Already have an account? <a href="/login">Log in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
